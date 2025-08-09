@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Socio Solidario · Virreyes Rugby Club</title>
+  <meta name="color-scheme" content="light only">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Fondo con imagen lavada */
+    .bg-hero {
+      background-image: url('vrc.jpg');
+      background-size: cover; background-position: center; position: relative;
+    }
+    .bg-hero::after { /* overlay verde del club */
+      content: ""; position: absolute; inset: 0; background: rgba(35,125,51,0.85);
+    }
+    .hero-content { position: relative; z-index: 1; }
+    input[type=number]::-webkit-outer-spin-button,
+    input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    input[type=number] { -moz-appearance: textfield; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+  <header class="bg-hero text-white">
+    <div class="hero-content max-w-3xl mx-auto px-6 py-12 text-center">
+      <img src="logovrc.png" alt="Virreyes Rugby Club" class="mx-auto mb-4" style="width: 160px;" onerror="this.style.display='none'" />
+      <h1 class="text-3xl md:text-4xl font-bold mb-3">Somos Virreyes</h1>
+      <p class="text-lg md:text-xl opacity-95">
+        Cada chico que está en el club es gracias a alguien que apostó por este sueño. Vos podés ser ese alguien.
+      </p>
+      <p class="mt-4 text-sm md:text-base opacity-95">
+        Más de 600 chicos entrenan y estudian en el club gracias al aporte de personas como vos.
+      </p>
+    </div>
+  </header>
+
+  <main class="flex-1">
+    <div class="max-w-3xl mx-auto px-6 py-10">
+      <div class="bg-white rounded-2xl shadow-xl p-6 md:p-8">
+        <h2 class="text-2xl font-semibold text-gray-900 mb-6">Quiero ser socio y contribuir mensualmente</h2>
+
+```
+    <form id="donationForm" class="space-y-6">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Nombre y apellido</label>
+          <input required name="nombre" type="text" class="mt-1 w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-600" placeholder="Tu nombre" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Email</label>
+          <input required name="email" type="email" class="mt-1 w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-600" placeholder="tu@mail.com" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Teléfono</label>
+          <input required name="telefono" type="tel" class="mt-1 w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-600" placeholder="Ej: +54 9 11 1234-5678" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700">¿Cómo conociste VRC?</label>
+          <input required name="comoConocio" type="text" class="mt-1 w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-600" placeholder="Ej: un amigo, redes, evento..." />
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">Seleccioná un monto</label>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+          <label class="flex items-center justify-center gap-2 rounded-xl border border-gray-300 px-4 py-3 cursor-pointer hover:border-emerald-600">
+            <input type="radio" name="monto" value="20000" class="accent-emerald-600" required />
+            <span class="font-medium">$20.000</span>
+          </label>
+          <label class="flex items-center justify-center gap-2 rounded-xl border border-gray-300 px-4 py-3 cursor-pointer hover:border-emerald-600">
+            <input type="radio" name="monto" value="40000" class="accent-emerald-600" />
+            <span class="font-medium">$40.000</span>
+          </label>
+          <label class="flex items-center justify-center gap-2 rounded-xl border border-gray-300 px-4 py-3 cursor-pointer hover:border-emerald-600">
+            <input type="radio" name="monto" value="60000" class="accent-emerald-600" />
+            <span class="font-medium">$60.000</span>
+          </label>
+          <label class="flex items-center gap-3 rounded-xl border border-gray-300 px-4 py-3 cursor-pointer hover:border-emerald-600">
+            <input type="radio" name="monto" value="libre" class="accent-emerald-600" />
+            <span class="font-medium">Libre</span>
+            <input id="montoLibre" type="number" min="1000" step="100" placeholder="$ Monto" class="flex-1 rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-600" />
+          </label>
+        </div>
+      </div>
+
+      <input type="hidden" id="embajador" name="embajador" />
+
+      <button id="submitBtn" type="submit" class="w-full md:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 px-6 py-3 text-white font-semibold">
+        Enviar y continuar a Mercado Pago
+      </button>
+
+      <p id="formMsg" class="text-sm text-gray-600"></p>
+    </form>
+  </div>
+
+  <p class="text-center text-xs text-gray-500 mt-8">© <span id="year"></span> Virreyes Rugby Club</p>
+</div>
+```
+
+  </main>
+
+  <script>
+    // ======== CONFIGURACIÓN ========
+    const CONFIG = {
+      GAS_ENDPOINT: "https://script.google.com/macros/s/AKfycbxCOlKoJk4ot5rnOUYc2yMCSn6am8jmYJd40oGYr6B_2XQXGj9dlk4C-3ltHg9IVh4h_w/exec",
+      DEFAULT_EMBAJADOR: "general",
+      LINKS: {
+        general: {
+          "20000": "https://www.mercadopago.com.ar/subscriptions/checkout?preapproval_plan_id=dceff05f52b94c89a1c7ccedf66d9462",
+          "40000": "https://www.mercadopago.com.ar/subscriptions/checkout?preapproval_plan_id=007bf6ab1fdd48feb687e71bce3c016d",
+          "60000": "https://www.mercadopago.com.ar/subscriptions/checkout?preapproval_plan_id=8660118894b54e009902d035a9000bdb",
+          libre:  "https://www.mercadopago.com.ar/subscriptions/checkout?preapproval_plan_id=2c9380849817d4a2019818f0477a0055"
+        },
+        marcos: {
+          "20000": "https://www.mercadopago.com.ar/subscriptions/checkout?preapproval_plan_id=3aed43f7a1494a1fa6727ba95eef432d",
+          "40000": "https://www.mercadopago.com.ar/subscriptions/checkout?preapproval_plan_id=0b987fbc0ff74f88b399b0fb13719863",
+          "60000": "https://www.mercadopago.com.ar/subscriptions/checkout?preapproval_plan_id=655727b76137441eaaf447b372ec049d",
+          libre:  "https://www.mercadopago.com.ar/subscriptions/checkout?preapproval_plan_id=dceff05f52b94c89a1c7ccedf66d9462"
+        }
+      }
+    };
+
+    document.getElementById('year').textContent = new Date().getFullYear();
+
+    const params = new URLSearchParams(window.location.search);
+    const emb = (params.get('embajador') || CONFIG.DEFAULT_EMBAJADOR).toLowerCase();
+    document.getElementById('embajador').value = emb;
+
+    const montoLibre = document.getElementById('montoLibre');
+    montoLibre.addEventListener('input', () => {
+      const libreRadio = document.querySelector('input[name="monto"][value="libre"]');
+      if (montoLibre.value && Number(montoLibre.value) > 0) libreRadio.checked = true;
+    });
+
+    function getMontoSeleccionado() {
+      const checked = document.querySelector('input[name="monto"]:checked');
+      if (!checked) return null;
+      if (checked.value === 'libre') {
+        const val = Number(montoLibre.value || 0);
+        return val > 0 ? val : null;
+      }
+      return Number(checked.value);
+    }
+
+    function getRedirectLink(embajador, monto) {
+      const map = CONFIG.LINKS[embajador] || CONFIG.LINKS[CONFIG.DEFAULT_EMBAJADOR];
+      if ([20000,40000,60000].includes(monto)) return map[String(monto)] || map.libre;
+      return map.libre;
+    }
+
+    async function submitForm(e) {
+      e.preventDefault();
+      const form = e.currentTarget;
+      const msg = document.getElementById('formMsg');
+      const btn = document.getElementById('submitBtn');
+
+      const data = Object.fromEntries(new FormData(form).entries());
+      const monto = getMontoSeleccionado();
+      if (!monto) { msg.textContent = 'Elegí un monto o ingresá uno válido en "Libre".'; return; }
+
+      const payload = {
+        nombre: data.nombre?.trim(),
+        email: data.email?.trim(),
+        telefono: data.telefono?.trim(),
+        comoConocio: data.comoConocio?.trim(),
+        embajador: data.embajador?.trim() || CONFIG.DEFAULT_EMBAJADOR,
+        montoSeleccionado: monto,
+        montoTipo: [20000,40000,60000].includes(monto) ? 'fijo' : 'libre',
+        userAgent: navigator.userAgent,
+        ts: new Date().toISOString()
+      };
+
+      btn.disabled = true; btn.classList.add('opacity-60');
+      msg.textContent = 'Guardando tu aporte...';
+
+      try {
+        const res = await fetch(CONFIG.GAS_ENDPOINT, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) throw new Error('No se pudo guardar.');
+        const json = await res.json();
+        if (!json.success) throw new Error(json.message || 'Error desconocido');
+
+        const link = getRedirectLink(payload.embajador, monto);
+        window.location.href = link;
+      } catch (err) {
+        console.error(err);
+        msg.textContent = 'Hubo un problema guardando los datos. Intentá de nuevo en un momento.';
+        btn.disabled = false; btn.classList.remove('opacity-60');
+      }
+    }
+
+    document.getElementById('donationForm').addEventListener('submit', submitForm);
+  </script>
+
+</body>
+</html>
