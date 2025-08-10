@@ -50,7 +50,7 @@
             </div>
           </div>
 
-          <!-- NUEVO: ¿Quién te contó de VRC? -->
+          <!-- ¿Quién te contó de VRC? -->
           <div>
             <label class="block text-sm font-medium text-gray-700">¿Quién te contó de VRC?</label>
             <select id="embajadorSelect" class="mt-1 w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-600">
@@ -83,7 +83,7 @@
             </div>
           </div>
 
-          <!-- Se sigue usando este hidden para guardar lo elegido en el select (o "otro") -->
+          <!-- Hidden donde guardamos el valor final (slug o nombre escrito) -->
           <input type="hidden" id="embajador" name="embajador" />
 
           <button id="submitBtn" type="submit" class="w-full md:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 px-6 py-3 text-white font-semibold">
@@ -109,45 +109,56 @@
       DEFAULT_EMBAJADOR: "general"
     };
 
-    // Carga los links desde el archivo externo
+    // Links desde archivo externo
     const LINKS = window.EMB_LINKS || {};
 
     document.getElementById('year').textContent = new Date().getFullYear();
 
-    // =================== SELECT DE "¿QUIÉN TE CONTÓ?" ===================
-    function toTitle(s){ return s.replace(/_/g,' ').replace(/\b\w/g, c => c.toUpperCase()); }
+    // =================== SELECT DE "¿QUIÉN TE CONTÓ?" (usa _label) ===================
+
+    // Convierte slug a Title Case si no hay _label
+    function toTitle(s){ return s.replace(/[_-]+/g,' ').replace(/\b\w/g, c => c.toUpperCase()); }
+    // Toma _label si existe, si no usa el slug formateado
+    function getLabel(key){
+      const obj = LINKS[key] || {};
+      return obj._label ? obj._label : toTitle(key);
+    }
 
     const selectEmb = document.getElementById('embajadorSelect');
     const embOtro   = document.getElementById('embajadorOtro');
     const hiddenEmb = document.getElementById('embajador');
 
-    // Lista de embajadores basada en embajadores.js (general primero)
-    const embKeys = Array.from(new Set(['general', ...Object.keys(LINKS).filter(k => k !== 'general')]));
+    // Lista: "general" primero y el resto ORDENADO por label
+    const others = Object.keys(LINKS).filter(k => k !== 'general')
+      .sort((a,b) => getLabel(a).localeCompare(getLabel(b), 'es'));
+    const embKeys = ['general', ...others];
 
-    // Poblar opciones
+    // Poblar opciones (agrega "Otro" al final)
     selectEmb.innerHTML =
       '<option value="">Seleccioná una opción</option>' +
-      embKeys.map(k => `<option value="${k}">${toTitle(k)}</option>`).join('') +
+      embKeys.map(k => `<option value="${k}">${getLabel(k)}</option>`).join('') +
       '<option value="otro">Otro</option>';
 
     function syncEmbHidden(){
       if (selectEmb.value === 'otro'){
         embOtro.classList.remove('hidden');
-        hiddenEmb.value = embOtro.value.trim().toLowerCase();
+        // guardamos lo que escribe la persona tal cual (para tu registro)
+        hiddenEmb.value = (embOtro.value || '').trim();
       } else {
         embOtro.classList.add('hidden');
         embOtro.value = '';
+        // guardamos el slug (sirve para redirección por embajador si existe en LINKS)
         hiddenEmb.value = selectEmb.value || CONFIG.DEFAULT_EMBAJADOR;
       }
     }
 
-    // Preselección por URL (?embajador=marcos)
+    // Preselección por URL (?embajador=slug); si no existe, usa "Otro" con el valor bonito
     const urlEmb = (new URLSearchParams(window.location.search).get('embajador') || '').toLowerCase();
     if (urlEmb && embKeys.includes(urlEmb)) {
       selectEmb.value = urlEmb;
     } else if (urlEmb && !embKeys.includes(urlEmb)) {
       selectEmb.value = 'otro';
-      embOtro.value = urlEmb;
+      embOtro.value = toTitle(urlEmb);
     } else {
       selectEmb.value = CONFIG.DEFAULT_EMBAJADOR;
     }
@@ -199,7 +210,7 @@
       }
       if (!monto) { msg.textContent = 'Elegí un monto o ingresá uno válido en "Libre".'; return; }
 
-      // Tomamos el embajador elegido (o lo escrito en "Otro") ya sincronizado en hiddenEmb
+      // embajador elegido (slug o nombre escrito)
       const selectedEmb = hiddenEmb.value || CONFIG.DEFAULT_EMBAJADOR;
 
       // FormData evita preflight CORS
@@ -235,4 +246,5 @@
   </script>
 </body>
 </html>
+
 
