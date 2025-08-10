@@ -150,52 +150,64 @@
       return map.libre;
     }
 
-    async function submitForm(e) {
-      e.preventDefault();
-      const form = e.currentTarget;
-      const msg = document.getElementById('formMsg');
-      const btn = document.getElementById('submitBtn');
 
-      const data = Object.fromEntries(new FormData(form).entries());
-      const monto = getMontoSeleccionado();
-      if (!monto) { msg.textContent = 'Elegí un monto o ingresá uno válido en "Libre".'; return; }
+async function submitForm(e) {
+  e.preventDefault();
+  const form = e.currentTarget;
+  const msg = document.getElementById('formMsg');
+  const btn = document.getElementById('submitBtn');
 
-      const payload = {
-        nombre: data.nombre?.trim(),
-        email: data.email?.trim(),
-        telefono: data.telefono?.trim(),
-        comoConocio: data.comoConocio?.trim(),
-        embajador: data.embajador?.trim() || CONFIG.DEFAULT_EMBAJADOR,
-        montoSeleccionado: monto,
-        montoTipo: [20000,40000,60000].includes(monto) ? 'fijo' : 'libre',
-        userAgent: navigator.userAgent,
-        ts: new Date().toISOString()
-      };
+  const data = Object.fromEntries(new FormData(form).entries());
 
-      btn.disabled = true; btn.classList.add('opacity-60');
-      msg.textContent = 'Guardando tu aporte...';
+  // monto seleccionado
+  const checked = document.querySelector('input[name="monto"]:checked');
+  let monto = null;
+  if (checked) {
+    if (checked.value === 'libre') {
+      const val = Number((document.getElementById('montoLibre').value || 0));
+      monto = val > 0 ? val : null;
+    } else {
+      monto = Number(checked.value);
+    }
+  }
+  if (!monto) { msg.textContent = 'Elegí un monto o ingresá uno válido en "Libre".'; return; }
 
-      try {
-        const res = await fetch(CONFIG.GAS_ENDPOINT, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        if (!res.ok) throw new Error('No se pudo guardar.');
-        const json = await res.json();
-        if (!json.success) throw new Error(json.message || 'Error desconocido');
+  // FormData evita preflight CORS
+  const fd = new FormData();
+  fd.append('nombre', (data.nombre || '').trim());
+  fd.append('email', (data.email || '').trim());
+  fd.append('telefono', (data.telefono || '').trim());
+  fd.append('comoConocio', (data.comoConocio || '').trim());
+  fd.append('embajador', (data.embajador || '').trim());
+  fd.append('montoSeleccionado', String(monto));
+  fd.append('montoTipo', [20000,40000,60000].includes(monto) ? 'fijo' : 'libre');
+  fd.append('userAgent', navigator.userAgent);
+  fd.append('ts', new Date().toISOString());
 
-        const link = getRedirectLink(payload.embajador, monto);
-        window.location.href = link;
-      } catch (err) {
-        console.error(err);
-        msg.textContent = 'Hubo un problema guardando los datos. Intentá de nuevo en un momento.';
-        btn.disabled = false; btn.classList.remove('opacity-60');
-      }
+  btn.disabled = true; btn.classList.add('opacity-60');
+  msg.textContent = 'Guardando tu aporte...';
+
+  try {
+    const res = await fetch(CONFIG.GAS_ENDPOINT, { method: 'POST', body: fd, redirect: 'follow' });
+
+    let json;
+    try { json = await res.json(); } catch { json = { success:false, message:'Respuesta no-JSON del servidor' }; }
+
+    if (!res.ok || !json.success) {
+      throw new Error(json && json.message ? json.message : `HTTP ${res.status}`);
     }
 
-    document.getElementById('donationForm').addEventListener('submit', submitForm);
-  </script>
+    const link = getRedirectLink(fd.get('embajador') || CONFIG.DEFAULT_EMBAJADOR, Number(fd.get('montoSeleccionado')));
+    window.location.href = link;
+  } catch (err) {
+    console.error(err);
+    msg.textContent = `Error guardando los datos: ${err.message || err}`;
+    btn.disabled = false; btn.classList.remove('opacity-60');
+  }
+}
+
+document.getElementById('donationForm').addEventListener('submit', submitForm);
+</script>
 
 </body>
 </html>
