@@ -3,6 +3,20 @@ from fastapi import FastAPI, HTTPException, Request
 from pydantic import BaseModel, Field, EmailStr
 from dotenv import load_dotenv
 from mp import create_subscription, get_subscription, update_subscription, search_subscriptions
+# en app.py (agregar al inicio)
+from fastapi.middleware.cors import CORSMiddleware
+import os
+
+app = FastAPI()
+
+origins = (os.environ.get("ALLOWED_ORIGINS","")).split(",")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[o.strip() for o in origins if o.strip()],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 load_dotenv()
 app = FastAPI()
