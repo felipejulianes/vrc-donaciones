@@ -98,152 +98,162 @@
     </div>
   </main>
 
-  <!-- 1) Embajadores externos -->
-  <script src="embajadores.js?v=1"></script>
+<!-- 1) Embajadores (solo labels/slug) -->
+<script src="embajadores.js?v=2"></script>
 
-  <!-- 2) Script principal -->
-  <script>
-    // ======== CONFIGURACIÓN ========
-    const CONFIG = {
-      GAS_ENDPOINT: "https://script.google.com/macros/s/AKfycbztISi0hSkFIfyPG2nNbzrUR_WUjvGxYnZ5ily-WsYf0p7Y59OdHTydB5PVjJAih8JAzg/exec",
-      DEFAULT_EMBAJADOR: "general"
-    };
+<!-- 2) Script principal (nuevo flujo sin planes) -->
+<script>
+  // ======== CONFIG ========
+  const CONFIG = {
+    // Si querés seguir registrando el lead en tu Google Apps Script, dejalo.
+    // Si no, poné "" y listo.
+    GAS_ENDPOINT: "https://script.google.com/macros/s/AKfycbztISi0hSkFIfyPG2nNbzrUR_WUjvGxYnZ5ily-WsYf0p7Y59OdHTydB5PVjJAih8JAzg/exec",
 
-    // Links desde archivo externo
-    const LINKS = window.EMB_LINKS || {};
+    // Tu backend (cambiá si tenés otra URL)
+    API_BASE: "https://api.virreyesrugbyclub.com",
 
-    document.getElementById('year').textContent = new Date().getFullYear();
+    DEFAULT_EMBAJADOR: "general"
+  };
 
-    // =================== SELECT DE "¿QUIÉN TE CONTÓ?" (usa _label) ===================
+  // Año en el footer
+  const yearEl = document.getElementById('year');
+  if (yearEl) yearEl.textContent = new Date().getFullYear();
 
-    // Convierte slug a Title Case si no hay _label
-    function toTitle(s){ return s.replace(/[_-]+/g,' ').replace(/\b\w/g, c => c.toUpperCase()); }
-    // Toma _label si existe, si no usa el slug formateado
-    function getLabel(key){
-      const obj = LINKS[key] || {};
-      return obj._label ? obj._label : toTitle(key);
-    }
+  // =================== SELECT "¿Quién te contó?" ===================
+  const selectEmb = document.getElementById('embajadorSelect');
+  const embOtro   = document.getElementById('embajadorOtro');
+  const hiddenEmb = document.getElementById('embajador');
 
-    const selectEmb = document.getElementById('embajadorSelect');
-    const embOtro   = document.getElementById('embajadorOtro');
-    const hiddenEmb = document.getElementById('embajador');
+  const lista = (window.EMBAJADORES || []).slice();
+  const general = lista.find(e => e.slug === 'general');
+  const others = lista.filter(e => e.slug !== 'general').sort((a,b)=>a.label.localeCompare(b.label,'es'));
+  const ordered = general ? [general, ...others] : others;
 
-    // Lista: "general" primero y el resto ORDENADO por label
-    const others = Object.keys(LINKS).filter(k => k !== 'general')
-      .sort((a,b) => getLabel(a).localeCompare(getLabel(b), 'es'));
-    const embKeys = ['general', ...others];
+  selectEmb.innerHTML =
+    '<option value="">Seleccioná una opción</option>' +
+    ordered.map(e => `<option value="${e.slug}">${e.label}</option>`).join('') +
+    '<option value="otro">Otro</option>';
 
-    // Poblar opciones (agrega "Otro" al final)
-    selectEmb.innerHTML =
-      '<option value="">Seleccioná una opción</option>' +
-      embKeys.map(k => `<option value="${k}">${getLabel(k)}</option>`).join('') +
-      '<option value="otro">Otro</option>';
+  function toTitle(s){ return s.replace(/[_-]+/g,' ').replace(/\b\w/g, c => c.toUpperCase()); }
 
-    function syncEmbHidden(){
-      if (selectEmb.value === 'otro'){
-        embOtro.classList.remove('hidden');
-        // guardamos lo que escribe la persona tal cual (para tu registro)
-        hiddenEmb.value = (embOtro.value || '').trim();
-      } else {
-        embOtro.classList.add('hidden');
-        embOtro.value = '';
-        // guardamos el slug (sirve para redirección por embajador si existe en LINKS)
-        hiddenEmb.value = selectEmb.value || CONFIG.DEFAULT_EMBAJADOR;
-      }
-    }
-
-    // Preselección por URL (?embajador=slug); si no existe, usa "Otro" con el valor bonito
-    const urlEmb = (new URLSearchParams(window.location.search).get('embajador') || '').toLowerCase();
-    if (urlEmb && embKeys.includes(urlEmb)) {
-      selectEmb.value = urlEmb;
-    } else if (urlEmb && !embKeys.includes(urlEmb)) {
-      selectEmb.value = 'otro';
-      embOtro.value = toTitle(urlEmb);
+  function syncEmbHidden(){
+    if (selectEmb.value === 'otro'){
+      embOtro.classList.remove('hidden');
+      hiddenEmb.value = (embOtro.value || '').trim();
     } else {
-      selectEmb.value = CONFIG.DEFAULT_EMBAJADOR;
+      embOtro.classList.add('hidden'); embOtro.value = '';
+      hiddenEmb.value = selectEmb.value || CONFIG.DEFAULT_EMBAJADOR;
     }
-    syncEmbHidden();
-    selectEmb.addEventListener('change', syncEmbHidden);
-    embOtro.addEventListener('input', syncEmbHidden);
+  }
 
-    // =================== Monto ===================
-    const montoLibre = document.getElementById('montoLibre');
+  // Preselección por ?embajador=slug
+  const urlEmb = (new URLSearchParams(location.search).get('embajador') || '').toLowerCase();
+  if (urlEmb && ordered.some(e => e.slug === urlEmb)) {
+    selectEmb.value = urlEmb;
+  } else if (urlEmb && !ordered.some(e => e.slug === urlEmb)) {
+    selectEmb.value = 'otro'; embOtro.value = toTitle(urlEmb);
+  } else {
+    selectEmb.value = CONFIG.DEFAULT_EMBAJADOR;
+  }
+  syncEmbHidden();
+  selectEmb.addEventListener('change', syncEmbHidden);
+  embOtro.addEventListener('input', syncEmbHidden);
+
+  // =================== MONTO ===================
+  const montoLibre = document.getElementById('montoLibre');
+  if (montoLibre) {
     montoLibre.addEventListener('input', () => {
       const libreRadio = document.querySelector('input[name="monto"][value="libre"]');
       if (montoLibre.value && Number(montoLibre.value) > 0) libreRadio.checked = true;
     });
+  }
 
-    function getMontoSeleccionado() {
-      const checked = document.querySelector('input[name="monto"]:checked');
-      if (!checked) return null;
-      if (checked.value === 'libre') {
-        const val = Number(montoLibre.value || 0);
-        return val > 0 ? val : null;
-      }
-      return Number(checked.value);
+  function getMontoSeleccionado() {
+    const checked = document.querySelector('input[name="monto"]:checked');
+    if (!checked) return null;
+    if (checked.value === 'libre') {
+      const v = Number((montoLibre?.value || 0));
+      return v > 0 ? v : null;
     }
+    return Number(checked.value);
+  }
 
-    function getRedirectLink(embajador, monto) {
-      const map = LINKS[embajador] || LINKS[CONFIG.DEFAULT_EMBAJADOR] || {};
-      if ([20000,40000,60000].includes(monto)) return map[String(monto)] || map.libre;
-      return map.libre;
-    }
+  // =================== SUBMIT ===================
+  async function submitForm(e) {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const msg = document.getElementById('formMsg');
+    const btn = document.getElementById('submitBtn');
 
-    async function submitForm(e) {
-      e.preventDefault();
-      const form = e.currentTarget;
-      const msg = document.getElementById('formMsg');
-      const btn = document.getElementById('submitBtn');
+    const fdRaw = new FormData(form);
+    const nombre      = (fdRaw.get("nombre") || "").trim();
+    const email       = (fdRaw.get("email") || "").trim();
+    const telefono    = (fdRaw.get("telefono") || "").trim();
+    const comoConocio = (fdRaw.get("comoConocio") || "").trim();
 
-      const data = Object.fromEntries(new FormData(form).entries());
+    const monto = getMontoSeleccionado();
+    if (!monto) { msg.textContent = 'Elegí un monto o ingresá uno válido.'; return; }
 
-      // monto seleccionado
-      const checked = document.querySelector('input[name="monto"]:checked');
-      let monto = null;
-      if (checked) {
-        if (checked.value === 'libre') {
-          const val = Number((document.getElementById('montoLibre').value || 0));
-          monto = val > 0 ? val : null;
-        } else {
-          monto = Number(checked.value);
-        }
-      }
-      if (!monto) { msg.textContent = 'Elegí un monto o ingresá uno válido en "Libre".'; return; }
+    const emb = (hiddenEmb.value || CONFIG.DEFAULT_EMBAJADOR).trim();
 
-      // embajador elegido (slug o nombre escrito)
-      const selectedEmb = hiddenEmb.value || CONFIG.DEFAULT_EMBAJADOR;
-
-      // FormData evita preflight CORS
-      const fd = new FormData();
-      fd.append('nombre', (data.nombre || '').trim());
-      fd.append('email', (data.email || '').trim());
-      fd.append('telefono', (data.telefono || '').trim());
-      fd.append('comoConocio', (data.comoConocio || '').trim());
-      fd.append('embajador', selectedEmb);
-      fd.append('montoSeleccionado', String(monto));
-      fd.append('montoTipo', [20000,40000,60000].includes(monto) ? 'fijo' : 'libre');
-      fd.append('userAgent', navigator.userAgent);
-      fd.append('ts', new Date().toISOString());
-
-      btn.disabled = true; btn.classList.add('opacity-60');
-      msg.textContent = 'Guardando tu aporte...';
-
+    // (Opcional) Registrar lead en GAS
+    if (CONFIG.GAS_ENDPOINT) {
       try {
-        const res = await fetch(CONFIG.GAS_ENDPOINT, { method: 'POST', body: fd, redirect: 'follow' });
-        let json; try { json = await res.json(); } catch { json = { success:false, message:'Respuesta no-JSON del servidor' }; }
-        if (!res.ok || !json.success) throw new Error(json.message || `HTTP ${res.status}`);
-
-        const link = getRedirectLink(selectedEmb, Number(fd.get('montoSeleccionado')));
-        window.location.href = link;
-      } catch (err) {
-        console.error(err);
-        msg.textContent = `Error guardando los datos: ${err.message || err}`;
-        btn.disabled = false; btn.classList.remove('opacity-60');
+        const lead = new FormData();
+        lead.append('nombre', nombre);
+        lead.append('email', email);
+        lead.append('telefono', telefono);
+        lead.append('comoConocio', comoConocio);
+        lead.append('embajador', emb);
+        lead.append('montoSeleccionado', String(monto));
+        lead.append('montoTipo', [20000,40000,60000].includes(monto) ? 'fijo' : 'libre');
+        lead.append('userAgent', navigator.userAgent);
+        lead.append('ts', new Date().toISOString());
+        await fetch(CONFIG.GAS_ENDPOINT, { method: 'POST', body: lead, redirect: 'follow' });
+      } catch (e) {
+        console.warn("GAS falló, continúo con MP:", e);
       }
     }
 
-    document.getElementById('donationForm').addEventListener('submit', submitForm);
-  </script>
+    btn.disabled = true; btn.classList.add('opacity-60');
+    msg.textContent = 'Creando tu suscripción...';
+
+    // Llamar a tu backend para crear la suscripción SIN plan (auto_recurring)
+    try {
+      const body = {
+        payer_email: email,
+        reason: "Virreyes Rugby Club - Aporte mensual",
+        external_reference: JSON.stringify({ embajador: emb, nombre, telefono }),
+        auto_recurring: {
+          currency_id: "ARS",
+          transaction_amount: Number(monto),
+          frequency: 1,
+          frequency_type: "months"
+        }
+      };
+
+      const r = await fetch(`${CONFIG.API_BASE}/subscriptions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      });
+      if (!r.ok) throw new Error(await r.text());
+      const json = await r.json();
+      if (!json.init_point) throw new Error("No se recibió init_point");
+
+      // Redirigí al flujo de autorización de Mercado Pago
+      location.href = json.init_point;
+    } catch (err) {
+      console.error(err);
+      msg.textContent = "No pudimos iniciar tu suscripción. Probá de nuevo.";
+      btn.disabled = false; btn.classList.remove('opacity-60');
+    }
+  }
+
+  const formEl = document.getElementById('donationForm');
+  if (formEl) formEl.addEventListener('submit', submitForm);
+</script>
+
 </body>
 </html>
 
