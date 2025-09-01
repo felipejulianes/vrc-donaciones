@@ -27,13 +27,21 @@ def health():
 # ---------- SUSCRIPCIONES (sin plan) ----------
 @app.post("/subscriptions", summary="Crear suscripción (auto_recurring, sin plan)")
 def create_subscription_no_plan(body: SubscriptionCreateNoPlan):
-    # /preapproval (sin plan) con auto_recurring y payer_email
+    # Armamos el payload que va a POST /preapproval
     payload = body.model_dump()
+
+    # back_url por default si no viene desde el front
     if not payload.get("back_url"):
         base_url = os.getenv("BASE_URL", "")
         if base_url:
             payload["back_url"] = f"{base_url.rstrip('/')}/gracias.html"
-    return mp_post("/preapproval", payload)  # :contentReference[oaicite:2]{index=2}
+
+    # Llamada a MP con manejo de errores (muestra el detalle real de MP)
+    try:
+        return mp_post("/preapproval", payload)
+    except Exception as e:
+        # Evita 500 y te devuelve el mensaje que vino de MP (qué campo falló, etc.)
+        raise HTTPException(status_code=400, detail=str(e))
 
 @app.get("/subscriptions/{preapproval_id}", summary="Obtener suscripción por ID")
 def get_subscription(preapproval_id: str):
